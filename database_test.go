@@ -14,22 +14,44 @@ var config = pgx.ConnConfig{User: "kseniia", Password: "Efbcnwww1", Database: "t
 var testTime = time.Now().Unix()
 var testTime2 = testTime + 1
 
-func TestTransaction_NewUser(t1 *testing.T) {
+func prepareDB() *pgx.Conn {
 	db, err := pgx.Connect(config)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	db.Exec(`INSERT INTO balances VALUES (4, $1), (5, $2), (6, $3);`, "1", "0", "44000")
+	db.Exec(`INSERT INTO history(wallet_id, date, option, amount, description) VALUES(4, $1, $2, $3, $4), (4, $5, $6, $7, $8)`, testTime, Replenishment, "1001", "деньги за продажу почки", testTime2, Withdrawal, "1000", "почка не подошла")
+
+	return db
+}
+
+func cleanup(db *pgx.Conn) {
+	db.Exec(`TRUNCATE TABLE history;`)
+	db.Exec(`DELETE FROM balances WHERE id = 1;`)
+	db.Exec(`DELETE FROM balances WHERE id = 3;`)
+	db.Exec(`DELETE FROM balances WHERE id = 123;`)
+	db.Exec(`DELETE FROM balances WHERE id = 4;`)
+	db.Exec(`DELETE FROM balances WHERE id = 5;`)
+	db.Exec(`DELETE FROM balances WHERE id = 6;`)
+	db.Exec(`ALTER SEQUENCE history_id_seq RESTART WITH 1;`)
+	db.Close()
+}
+
+func TestTransaction_NewUser(t1 *testing.T) {
+	db := prepareDB()
+	defer cleanup(db)
 
 	tests := []struct {
 		name    string
 		argID   int
 		wantErr bool
 	}{
-		{name: "new user with unique id 1", argID: 123, wantErr: false},
-		{name: "new user with unique id 2", argID: 1, wantErr: false},
+		{name: "new user with unique id 123", argID: 123, wantErr: false},
+		{name: "new user with unique id 1", argID: 1, wantErr: false},
 		{name: "new user with unique id 3", argID: 3, wantErr: false},
-		{name: "new user with not unique id 1", argID: 123, wantErr: true},
-		{name: "new user with not unique id 2", argID: 1, wantErr: true},
+		{name: "new user with not unique id 4", argID: 4, wantErr: true},
+		{name: "new user with not unique id 5", argID: 5, wantErr: true},
 	}
 	for _, tt := range tests {
 		t1.Run(tt.name, func(t1 *testing.T) {
@@ -57,15 +79,11 @@ func TestTransaction_NewUser(t1 *testing.T) {
 
 		})
 	}
-
-	db.Close()
 }
 
 func TestTransaction_CommitChanges(t1 *testing.T) {
-	db, err := pgx.Connect(config)
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := prepareDB()
+	defer cleanup(db)
 
 	type args struct {
 		id      int
@@ -77,22 +95,17 @@ func TestTransaction_CommitChanges(t1 *testing.T) {
 		name string
 		args args
 	}{
-		{name: "transfer money to user 1", args: args{id: 1, balance: "1000.456",
-			ch: Change{Date: testTime, Operation: Replenishment, Amount: "1000.456", Description: "деньги за продажу почки"}}},
 
-		{name: "transfer money to user 123", args: args{id: 123, balance: "45",
+		{name: "transfer money to user 5", args: args{id: 5, balance: "45",
 			ch: Change{Date: testTime, Operation: Replenishment, Amount: "45", Description: "на проезд"}}},
 
-		{name: "transfer money to user 3", args: args{id: 3, balance: "45000",
-			ch: Change{Date: testTime, Operation: Replenishment, Amount: "45000", Description: "зачисление через банкомат"}}},
+		{name: "transfer money to user 6", args: args{id: 6, balance: "45000",
+			ch: Change{Date: testTime, Operation: Replenishment, Amount: "1000", Description: "зачисление через банкомат"}}},
 
-		{name: "transfer money from user 1", args: args{id: 1, balance: "0.456",
-			ch: Change{Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}}},
-
-		{name: "transfer money from user 123", args: args{id: 123, balance: "0",
+		{name: "transfer money from user 5", args: args{id: 5, balance: "0",
 			ch: Change{Date: testTime2, Operation: Withdrawal, Amount: "45", Description: "на трамвай"}}},
 
-		{name: "transfer money from user 3", args: args{id: 3, balance: "44000",
+		{name: "transfer money from user 6", args: args{id: 6, balance: "44000",
 			ch: Change{Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "покупка почки"}}},
 	}
 
@@ -127,17 +140,13 @@ func TestTransaction_CommitChanges(t1 *testing.T) {
 			assert.Equal(t1, tt.args.ch, *resHistory)
 		})
 	}
-
-	db.Close()
 }
 
 func TestTransaction_GetBalance(t1 *testing.T) {
-	db, err := pgx.Connect(config)
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := prepareDB()
+	defer cleanup(db)
 
-	balance1, err := decimal.NewFromString("0.456")
+	balance1, err := decimal.NewFromString("1")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -156,12 +165,10 @@ func TestTransaction_GetBalance(t1 *testing.T) {
 		want    Wallet
 		wantErr bool
 	}{
-		{name: "get balance from existing user 1", argID: 1, want: Wallet{ID: 1, Balance: balance1}, wantErr: false},
-		{name: "get balance from existing user 2", argID: 123, want: Wallet{ID: 123, Balance: balance2}, wantErr: false},
-		{name: "get balance from existing user 3", argID: 3, want: Wallet{ID: 3, Balance: balance3}, wantErr: false},
-		{name: "get balance from not existing user 1", argID: 4, wantErr: true},
-		{name: "get balance from not existing user 2", wantErr: true},
-		{name: "get balance from not existing user 3", wantErr: true},
+		{name: "get balance from existing user 4", argID: 4, want: Wallet{ID: 4, Balance: balance1}, wantErr: false},
+		{name: "get balance from existing user 5", argID: 5, want: Wallet{ID: 5, Balance: balance2}, wantErr: false},
+		{name: "get balance from existing user 6", argID: 6, want: Wallet{ID: 6, Balance: balance3}, wantErr: false},
+		{name: "get balance from not existing user 1", argID: 1, wantErr: true},
 	}
 
 	for _, tt := range tests {
@@ -188,15 +195,11 @@ func TestTransaction_GetBalance(t1 *testing.T) {
 			t.tx.Commit()
 		})
 	}
-
-	db.Close()
 }
 
 func TestTransaction_GetHistory(t1 *testing.T) {
-	db, err := pgx.Connect(config)
-	if err != nil {
-		log.Fatal(err)
-	}
+	db := prepareDB()
+	defer cleanup(db)
 
 	type args struct {
 		id      int
@@ -211,20 +214,20 @@ func TestTransaction_GetHistory(t1 *testing.T) {
 	}{
 		{name: "get history of not existed user", args: args{id: 10, orderBy: OrderByAmount, order: Asc}, wantErr: true},
 
-		{name: "get history of existed user order by amount asc", args: args{id: 1, orderBy: OrderByAmount, order: Asc},
-			want:    Wallet{ID: 1, History: []Change{{Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}, {Date: testTime, Operation: Replenishment, Amount: "1000.456", Description: "деньги за продажу почки"}}},
+		{name: "get history of existed user order by amount asc", args: args{id: 4, orderBy: OrderByAmount, order: Asc},
+			want:    Wallet{ID: 4, History: []Change{{Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}, {Date: testTime, Operation: Replenishment, Amount: "1001", Description: "деньги за продажу почки"}}},
 			wantErr: false},
 
-		{name: "get history of existed user order by amount desc", args: args{id: 1, orderBy: OrderByAmount, order: Desc},
-			want:    Wallet{ID: 1, History: []Change{{Date: testTime, Operation: Replenishment, Amount: "1000.456", Description: "деньги за продажу почки"}, {Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}}},
+		{name: "get history of existed user order by amount desc", args: args{id: 4, orderBy: OrderByAmount, order: Desc},
+			want:    Wallet{ID: 4, History: []Change{{Date: testTime, Operation: Replenishment, Amount: "1001", Description: "деньги за продажу почки"}, {Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}}},
 			wantErr: false},
 
-		{name: "get history of of existed user order by date asc", args: args{id: 1, orderBy: OrderByDate, order: Asc},
-			want:    Wallet{ID: 1, History: []Change{{Date: testTime, Operation: Replenishment, Amount: "1000.456", Description: "деньги за продажу почки"}, {Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}}},
+		{name: "get history of of existed user order by date asc", args: args{id: 4, orderBy: OrderByDate, order: Asc},
+			want:    Wallet{ID: 4, History: []Change{{Date: testTime, Operation: Replenishment, Amount: "1001", Description: "деньги за продажу почки"}, {Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}}},
 			wantErr: false},
 
-		{name: "get history of existed user order by date desc", args: args{id: 1, orderBy: OrderByDate, order: Desc},
-			want:    Wallet{ID: 1, History: []Change{{Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}, {Date: testTime, Operation: Replenishment, Amount: "1000.456", Description: "деньги за продажу почки"}}},
+		{name: "get history of existed user order by date desc", args: args{id: 4, orderBy: OrderByDate, order: Desc},
+			want:    Wallet{ID: 4, History: []Change{{Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}, {Date: testTime, Operation: Replenishment, Amount: "1001", Description: "деньги за продажу почки"}}},
 			wantErr: false},
 	}
 
@@ -248,12 +251,4 @@ func TestTransaction_GetHistory(t1 *testing.T) {
 			t.tx.Commit()
 		})
 	}
-
-	//Cleanup
-	db.Exec(`TRUNCATE TABLE history;`)
-	db.Exec(`DELETE FROM balances WHERE id = 1;`)
-	db.Exec(`DELETE FROM balances WHERE id = 3;`)
-	db.Exec(`DELETE FROM balances WHERE id = 123;`)
-
-	db.Close()
 }

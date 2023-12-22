@@ -8,7 +8,7 @@ CREATE INDEX IF NOT EXISTS id_balances_idx ON balances USING HASH(id);
 CREATE TABLE IF NOT EXISTS history (
     "id" BIGSERIAL PRIMARY KEY,
     "wallet_id" INT NOT NULL,
-    "date" INT8 NOT NULL,
+    "date" BIGINT NOT NULL,
     "option" TEXT NOT NULL,
     "amount" TEXT NOT NULL,
     "description" TEXT NOT NULL,

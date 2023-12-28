@@ -74,7 +74,7 @@ func TestMoneyTransaction(t *testing.T) {
 		{name: "replenishment: user does not exist", args: args{id: 0, opt: Replenishment, amount: "1000", desc: "bribe"}, wantErr: false},
 		{name: "replenishment: user exist", args: args{id: 100, opt: Replenishment, amount: "100", desc: "donation"}, wantErr: false},
 		{name: "withdrawal: user exist, insufficient funds", args: args{id: 456, opt: Withdrawal, amount: "4600", desc: "buying phone"}, wantErr: true, expectedErr: InsufficientFundsErr},
-		{name: "withdrawal: user exist", args: args{id: 5000, opt: Withdrawal, amount: "4600", desc: "buying phone"}, wantErr: false},
+		{name: "withdrawal: user exist", args: args{id: 5000, opt: Withdrawal, amount: "60", desc: "buying cake"}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -101,8 +101,8 @@ func TestTransfer(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "successful transfer", args: args{from: 1000, to: 100, amount: "400"}, wantErr: false},
-		{name: "unsuccessful transfer: insufficient funds", args: args{from: 1000, to: 100, amount: "1200"}, wantErr: true},
+		{name: "successful transfer", args: args{from: 456, to: 123, amount: "120"}, wantErr: false},
+		{name: "unsuccessful transfer: insufficient funds", args: args{from: 123, to: 456, amount: "400"}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -41,7 +41,7 @@ func (w *Wallet) ChangeBalance(amount string, opt Operation) error {
 
 	switch opt {
 	case Replenishment:
-		w.Balance.Add(a)
+		w.Balance = w.Balance.Add(a)
 		return nil
 	case Withdrawal:
 		test := w.Balance.Sub(a)

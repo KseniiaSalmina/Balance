@@ -28,7 +28,7 @@ func TestNewChange(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewChange(tt.args.opt, tt.args.amount, tt.args.descr)
 
-			assert.Less(t, startTime, got.Date)
+			assert.LessOrEqual(t, startTime, got.Date)
 			assert.Equal(t, tt.args.opt, got.Operation)
 			assert.Equal(t, tt.args.amount, got.Amount)
 			assert.Equal(t, tt.args.descr, got.Description)

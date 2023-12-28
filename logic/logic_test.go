@@ -3,10 +3,13 @@ package logic
 import (
 	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/KseniiaSalmina/Balance/database"
+	"github.com/KseniiaSalmina/Balance/wallet"
 )
 
 func TestCheckBalance(t *testing.T) {
-	mock := MockDb{}
+	mock := database.MockDb{}
 	tests := []struct {
 		name    string
 		id      int
@@ -31,21 +34,22 @@ func TestCheckBalance(t *testing.T) {
 }
 
 func TestCheckHistory(t *testing.T) {
-	mock := MockDb{}
+	mock := database.MockDb{}
 	tests := []struct {
 		name           string
 		id             int
+		limit          int
 		wantErr        bool
 		expectedLength int
 	}{
-		{name: "expected data: database returns 100 notes", id: 100, wantErr: false, expectedLength: 10},
-		{name: "expected data: database returns less than 100 notes", id: 34, wantErr: false, expectedLength: 4},
-		{name: "unexpected data: user does not exist or have ero balance", id: -5, wantErr: true, expectedLength: 0},
-		{name: "unexpected data: database returns more than 100 notes", id: 120, wantErr: false, expectedLength: 10},
+		{name: "expected data: database got 100 returns 100 notes", id: 100, limit: 100, wantErr: false, expectedLength: 100},
+		{name: "expected data: database got 120 returns 100 notes", id: 120, limit: 100, wantErr: false, expectedLength: 100},
+		{name: "unexpected data: user does not exist or have ero balance", id: -5, limit: 100, wantErr: true, expectedLength: 0},
+		{name: "unexpected data: database returns more than 100 notes", id: 120, limit: 120, wantErr: false, expectedLength: 120},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := CheckHistory(&mock, tt.id, OrderByDate, Desc)
+			got, err := CheckHistory(&mock, tt.id, database.OrderByDate, database.Desc, tt.limit)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -57,10 +61,10 @@ func TestCheckHistory(t *testing.T) {
 }
 
 func TestMoneyTransaction(t *testing.T) {
-	mock := MockDb{}
+	mock := database.MockDb{}
 	type args struct {
 		id     int
-		opt    Operation
+		opt    wallet.Operation
 		amount string
 		desc   string
 	}
@@ -70,11 +74,11 @@ func TestMoneyTransaction(t *testing.T) {
 		wantErr     bool
 		expectedErr error
 	}{
-		{name: "withdrawal: user does not exist", args: args{id: 0, opt: Withdrawal, amount: "200", desc: "advertising purchase"}, wantErr: true, expectedErr: UserDoesNotExistErr},
-		{name: "replenishment: user does not exist", args: args{id: 0, opt: Replenishment, amount: "1000", desc: "bribe"}, wantErr: false},
-		{name: "replenishment: user exist", args: args{id: 100, opt: Replenishment, amount: "100", desc: "donation"}, wantErr: false},
-		{name: "withdrawal: user exist, insufficient funds", args: args{id: 456, opt: Withdrawal, amount: "4600", desc: "buying phone"}, wantErr: true, expectedErr: InsufficientFundsErr},
-		{name: "withdrawal: user exist", args: args{id: 5000, opt: Withdrawal, amount: "60", desc: "buying cake"}, wantErr: false},
+		{name: "withdrawal: user does not exist", args: args{id: 0, opt: wallet.Withdrawal, amount: "200", desc: "advertising purchase"}, wantErr: true, expectedErr: database.UserDoesNotExistErr},
+		{name: "replenishment: user does not exist", args: args{id: 0, opt: wallet.Replenishment, amount: "1000", desc: "bribe"}, wantErr: false},
+		{name: "replenishment: user exist", args: args{id: 100, opt: wallet.Replenishment, amount: "100", desc: "donation"}, wantErr: false},
+		{name: "withdrawal: user exist, insufficient funds", args: args{id: 456, opt: wallet.Withdrawal, amount: "4600", desc: "buying phone"}, wantErr: true, expectedErr: wallet.InsufficientFundsErr},
+		{name: "withdrawal: user exist", args: args{id: 5000, opt: wallet.Withdrawal, amount: "60", desc: "buying cake"}, wantErr: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -90,7 +94,7 @@ func TestMoneyTransaction(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	mock := MockDb{}
+	mock := database.MockDb{}
 	type args struct {
 		from   int
 		to     int
@@ -109,7 +113,7 @@ func TestTransfer(t *testing.T) {
 			err := Transfer(&mock, tt.args.from, tt.args.to, tt.args.amount)
 			if tt.wantErr {
 				assert.Error(t, err)
-				assert.ErrorIs(t, err, InsufficientFundsErr)
+				assert.ErrorIs(t, err, wallet.InsufficientFundsErr)
 			} else {
 				assert.NoError(t, err)
 			}

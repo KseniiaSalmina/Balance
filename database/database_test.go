@@ -8,6 +8,8 @@ import (
 	"log"
 	"testing"
 	"time"
+
+	"github.com/KseniiaSalmina/Balance/wallet"
 )
 
 var config = pgx.ConnConfig{User: "user", Password: "password", Database: "testdb"} //TODO
@@ -21,7 +23,7 @@ func prepareDB() *pgx.Conn {
 	}
 
 	db.Exec(`INSERT INTO balances VALUES (4, $1), (5, $2), (6, $3);`, "1", "0", "44000")
-	db.Exec(`INSERT INTO history(wallet_id, date, option, amount, description) VALUES(4, $1, $2, $3, $4), (4, $5, $6, $7, $8)`, testTime, Replenishment, "1001", "деньги за продажу почки", testTime2, Withdrawal, "1000", "почка не подошла")
+	db.Exec(`INSERT INTO history(wallet_id, date, option, amount, description) VALUES(4, $1, $2, $3, $4), (4, $5, $6, $7, $8)`, testTime, wallet.Replenishment, "1001", "деньги за продажу почки", testTime2, wallet.Withdrawal, "1000", "почка не подошла")
 
 	return db
 }
@@ -88,7 +90,7 @@ func TestTransaction_CommitChanges(t1 *testing.T) {
 	type args struct {
 		id      int
 		balance string
-		ch      Change
+		ch      wallet.Change
 	}
 
 	tests := []struct {
@@ -97,16 +99,16 @@ func TestTransaction_CommitChanges(t1 *testing.T) {
 	}{
 
 		{name: "transfer money to user 5", args: args{id: 5, balance: "45",
-			ch: Change{Date: testTime, Operation: Replenishment, Amount: "45", Description: "на проезд"}}},
+			ch: wallet.Change{Date: testTime, Operation: wallet.Replenishment, Amount: "45", Description: "на проезд"}}},
 
 		{name: "transfer money to user 6", args: args{id: 6, balance: "45000",
-			ch: Change{Date: testTime, Operation: Replenishment, Amount: "1000", Description: "зачисление через банкомат"}}},
+			ch: wallet.Change{Date: testTime, Operation: wallet.Replenishment, Amount: "1000", Description: "зачисление через банкомат"}}},
 
 		{name: "transfer money from user 5", args: args{id: 5, balance: "0",
-			ch: Change{Date: testTime2, Operation: Withdrawal, Amount: "45", Description: "на трамвай"}}},
+			ch: wallet.Change{Date: testTime2, Operation: wallet.Withdrawal, Amount: "45", Description: "на трамвай"}}},
 
 		{name: "transfer money from user 6", args: args{id: 6, balance: "44000",
-			ch: Change{Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "покупка почки"}}},
+			ch: wallet.Change{Date: testTime2, Operation: wallet.Withdrawal, Amount: "1000", Description: "покупка почки"}}},
 	}
 
 	for _, tt := range tests {
@@ -134,7 +136,7 @@ func TestTransaction_CommitChanges(t1 *testing.T) {
 			var date pgtype.Int8
 			var option, amount, description pgtype.Text
 			err = db.QueryRow(`SELECT date, option, amount, description FROM history WHERE wallet_id = $1 ORDER BY date DESC LIMIT 1`, tt.args.id).Scan(&date, &option, &amount, &description)
-			resHistory := &Change{Date: date.Int, Operation: Operation(option.String), Amount: amount.String, Description: description.String}
+			resHistory := &wallet.Change{Date: date.Int, Operation: wallet.Operation(option.String), Amount: amount.String, Description: description.String}
 
 			assert.NoError(t1, err)
 			assert.Equal(t1, tt.args.ch, *resHistory)
@@ -162,12 +164,12 @@ func TestTransaction_GetBalance(t1 *testing.T) {
 	tests := []struct {
 		name    string
 		argID   int
-		want    Wallet
+		want    wallet.Wallet
 		wantErr bool
 	}{
-		{name: "get balance from existing user 4", argID: 4, want: Wallet{ID: 4, Balance: balance1}, wantErr: false},
-		{name: "get balance from existing user 5", argID: 5, want: Wallet{ID: 5, Balance: balance2}, wantErr: false},
-		{name: "get balance from existing user 6", argID: 6, want: Wallet{ID: 6, Balance: balance3}, wantErr: false},
+		{name: "get balance from existing user 4", argID: 4, want: wallet.Wallet{ID: 4, Balance: balance1}, wantErr: false},
+		{name: "get balance from existing user 5", argID: 5, want: wallet.Wallet{ID: 5, Balance: balance2}, wantErr: false},
+		{name: "get balance from existing user 6", argID: 6, want: wallet.Wallet{ID: 6, Balance: balance3}, wantErr: false},
 		{name: "get balance from not existing user 1", argID: 1, wantErr: true},
 	}
 
@@ -209,25 +211,25 @@ func TestTransaction_GetHistory(t1 *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    Wallet
+		want    wallet.Wallet
 		wantErr bool
 	}{
 		{name: "get history of not existed user", args: args{id: 10, orderBy: OrderByAmount, order: Asc}, wantErr: true},
 
 		{name: "get history of existed user order by amount asc", args: args{id: 4, orderBy: OrderByAmount, order: Asc},
-			want:    Wallet{ID: 4, History: []Change{{Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}, {Date: testTime, Operation: Replenishment, Amount: "1001", Description: "деньги за продажу почки"}}},
+			want:    wallet.Wallet{ID: 4, History: []wallet.Change{{Date: testTime2, Operation: wallet.Withdrawal, Amount: "1000", Description: "почка не подошла"}, {Date: testTime, Operation: wallet.Replenishment, Amount: "1001", Description: "деньги за продажу почки"}}},
 			wantErr: false},
 
 		{name: "get history of existed user order by amount desc", args: args{id: 4, orderBy: OrderByAmount, order: Desc},
-			want:    Wallet{ID: 4, History: []Change{{Date: testTime, Operation: Replenishment, Amount: "1001", Description: "деньги за продажу почки"}, {Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}}},
+			want:    wallet.Wallet{ID: 4, History: []wallet.Change{{Date: testTime, Operation: wallet.Replenishment, Amount: "1001", Description: "деньги за продажу почки"}, {Date: testTime2, Operation: wallet.Withdrawal, Amount: "1000", Description: "почка не подошла"}}},
 			wantErr: false},
 
 		{name: "get history of of existed user order by date asc", args: args{id: 4, orderBy: OrderByDate, order: Asc},
-			want:    Wallet{ID: 4, History: []Change{{Date: testTime, Operation: Replenishment, Amount: "1001", Description: "деньги за продажу почки"}, {Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}}},
+			want:    wallet.Wallet{ID: 4, History: []wallet.Change{{Date: testTime, Operation: wallet.Replenishment, Amount: "1001", Description: "деньги за продажу почки"}, {Date: testTime2, Operation: wallet.Withdrawal, Amount: "1000", Description: "почка не подошла"}}},
 			wantErr: false},
 
 		{name: "get history of existed user order by date desc", args: args{id: 4, orderBy: OrderByDate, order: Desc},
-			want:    Wallet{ID: 4, History: []Change{{Date: testTime2, Operation: Withdrawal, Amount: "1000", Description: "почка не подошла"}, {Date: testTime, Operation: Replenishment, Amount: "1001", Description: "деньги за продажу почки"}}},
+			want:    wallet.Wallet{ID: 4, History: []wallet.Change{{Date: testTime2, Operation: wallet.Withdrawal, Amount: "1000", Description: "почка не подошла"}, {Date: testTime, Operation: wallet.Replenishment, Amount: "1001", Description: "деньги за продажу почки"}}},
 			wantErr: false},
 	}
 
@@ -239,7 +241,7 @@ func TestTransaction_GetHistory(t1 *testing.T) {
 			}
 			t := &Transaction{tx: tx}
 
-			got, err := t.GetHistory(tt.args.id, tt.args.orderBy, tt.args.order)
+			got, err := t.GetHistory(tt.args.id, tt.args.orderBy, tt.args.order, 100)
 			if tt.wantErr {
 				assert.Error(t1, err)
 				assert.Nil(t1, got)

@@ -6,6 +6,9 @@ import (
 	"github.com/jackc/pgx"
 	"github.com/jackc/pgx/pgtype"
 	"github.com/shopspring/decimal"
+	"strconv"
+
+	"github.com/KseniiaSalmina/Balance/wallet"
 )
 
 type Database struct {
@@ -34,7 +37,7 @@ const (
 
 var UserDoesNotExistErr error = errors.New("user does not exist")
 
-func (t *Transaction) GetBalance(id int) (*Wallet, error) {
+func (t *Transaction) GetBalance(id int) (*wallet.Wallet, error) {
 	row := t.tx.QueryRow(`SELECT balance FROM balances WHERE id = $1`, id)
 
 	var balance pgtype.Text
@@ -50,26 +53,26 @@ func (t *Transaction) GetBalance(id int) (*Wallet, error) {
 		return nil, fmt.Errorf("GetBalance -> %w", err)
 	}
 
-	return &Wallet{ID: id, Balance: formatBalance}, nil
+	return &wallet.Wallet{ID: id, Balance: formatBalance}, nil
 }
 
-func (t *Transaction) GetHistory(wallet_id int, orderBy OrderBy, order Order) (*Wallet, error) {
-	query := `SELECT date, option, amount, description FROM history WHERE wallet_id = $1` + ` ORDER BY ` + string(orderBy) + ` ` + string(order) + ` LIMIT 100`
-	rows, err := t.tx.Query(query, wallet_id)
+func (t *Transaction) GetHistory(walletID int, orderBy OrderBy, order Order, limit int) (*wallet.Wallet, error) {
+	query := `SELECT date, option, amount, description FROM history WHERE wallet_id = $1` + ` ORDER BY ` + string(orderBy) + ` ` + string(order) + ` LIMIT ` + strconv.Itoa(limit)
+	rows, err := t.tx.Query(query, walletID)
 	if err != nil {
 		return nil, fmt.Errorf("getHistory -> %w", err)
 	}
 
-	w := &Wallet{ID: wallet_id, History: make([]Change, 0, 101)}
+	w := &wallet.Wallet{ID: walletID, History: make([]wallet.Change, 0, limit+1)}
 	for rows.Next() {
-		var c Change
+		var c wallet.Change
 		var date pgtype.Int8
 		var operation, amount, description pgtype.Text
 		if err = rows.Scan(&date, &operation, &amount, &description); err != nil {
 			return nil, fmt.Errorf("GetHistory -> %w", err)
 		}
 
-		c.Date, c.Operation, c.Amount, c.Description = date.Int, Operation(operation.String), amount.String, description.String
+		c.Date, c.Operation, c.Amount, c.Description = date.Int, wallet.Operation(operation.String), amount.String, description.String
 		w.History = append(w.History, c)
 	}
 
@@ -80,7 +83,7 @@ func (t *Transaction) GetHistory(wallet_id int, orderBy OrderBy, order Order) (*
 	return w, nil
 }
 
-func (t *Transaction) CommitChanges(id int, balance string, ch Change) error {
+func (t *Transaction) CommitChanges(id int, balance string, ch wallet.Change) error {
 	_, err := t.tx.Exec(`UPDATE balances SET balance = $1 WHERE id = $2`, balance, id)
 	if err != nil {
 		return fmt.Errorf("ChangeBalance -> %w", err)

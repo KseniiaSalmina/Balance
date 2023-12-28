@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"github.com/KseniiaSalmina/Balance/database"
+	"github.com/KseniiaSalmina/Balance/database/mockdb"
 	"github.com/KseniiaSalmina/Balance/wallet"
 )
 
 func TestCheckBalance(t *testing.T) {
-	mock := database.MockDb{}
+	mock := mockdb.MockDb{}
 	tests := []struct {
 		name    string
 		id      int
@@ -34,7 +35,7 @@ func TestCheckBalance(t *testing.T) {
 }
 
 func TestCheckHistory(t *testing.T) {
-	mock := database.MockDb{}
+	mock := mockdb.MockDb{}
 	tests := []struct {
 		name           string
 		id             int
@@ -61,7 +62,7 @@ func TestCheckHistory(t *testing.T) {
 }
 
 func TestMoneyTransaction(t *testing.T) {
-	mock := database.MockDb{}
+	mock := mockdb.MockDb{}
 	type args struct {
 		id     int
 		opt    wallet.Operation
@@ -94,7 +95,7 @@ func TestMoneyTransaction(t *testing.T) {
 }
 
 func TestTransfer(t *testing.T) {
-	mock := database.MockDb{}
+	mock := mockdb.MockDb{}
 	type args struct {
 		from   int
 		to     int

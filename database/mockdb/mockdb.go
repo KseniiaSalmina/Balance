@@ -1,9 +1,10 @@
-package database
+package mockdb
 
 import (
 	"errors"
 	"github.com/shopspring/decimal"
 
+	"github.com/KseniiaSalmina/Balance/database"
 	"github.com/KseniiaSalmina/Balance/wallet"
 )
 
@@ -11,13 +12,13 @@ type MockDb struct{}
 
 func (m *MockDb) GetBalance(id int) (*wallet.Wallet, error) {
 	if id <= 0 {
-		return nil, UserDoesNotExistErr
+		return nil, database.UserDoesNotExistErr
 	}
 	testBalance, _ := decimal.NewFromString("300")
 	return &wallet.Wallet{ID: id, Balance: testBalance}, nil
 }
 
-func (m *MockDb) GetHistory(id int, orderBy OrderBy, order Order, limit int) (*wallet.Wallet, error) {
+func (m *MockDb) GetHistory(id int, orderBy database.OrderBy, order database.Order, limit int) (*wallet.Wallet, error) {
 	var err = errors.New("test error")
 	if id < 0 {
 		return nil, err

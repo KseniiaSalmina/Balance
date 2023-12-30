@@ -1,3 +1,4 @@
+
 CREATE TABLE IF NOT EXISTS balances (
     "id" INT PRIMARY KEY,
     "balance" TEXT DEFAULT 0

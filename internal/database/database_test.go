@@ -12,7 +12,7 @@ import (
 	"github.com/KseniiaSalmina/Balance/internal/wallet"
 )
 
-var config = pgx.ConnConfig{User: "kseniia", Password: "Efbcnwww1", Database: "testdb"} //TODO
+var config = pgx.ConnConfig{User: "user", Password: "password", Database: "testdb"} //TODO
 var testTime = time.Now().Unix()
 var testTime2 = testTime + 1
 

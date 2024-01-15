@@ -2,15 +2,25 @@ package main
 
 import (
 	app "github.com/KseniiaSalmina/Balance/internal"
-	"github.com/jackc/pgx"
+	"github.com/KseniiaSalmina/Balance/internal/config"
+	"github.com/caarlos0/env/v6"
+	"github.com/joho/godotenv"
 	"log"
 )
 
-func main() {
-	config := pgx.ConnConfig{User: "user", Password: "password", Database: "testdb"} // TODO
-	protocol, address := "protocol", "IP:port"                                       // TODO
+var (
+	cfg config.Application
+)
 
-	application, err := app.NewApplication(config, protocol, address)
+func init() {
+	_ = godotenv.Load(".env")
+	if err := env.Parse(&cfg); err != nil {
+		panic(err)
+	}
+}
+
+func main() {
+	application, err := app.NewApplication(cfg)
 	if err != nil {
 		log.Fatal(err)
 	}

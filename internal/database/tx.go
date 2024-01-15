@@ -15,14 +15,6 @@ type Transaction struct {
 	tx *pgx.Tx
 }
 
-func NewTransaction(db *pgx.Conn) (*Transaction, error) {
-	tx, err := db.Begin()
-	if err != nil {
-		return nil, fmt.Errorf("NewTransaction -> %w", err)
-	}
-	return &Transaction{tx: tx}, nil
-}
-
 func (t *Transaction) Rollback() {
 	t.tx.Rollback()
 }

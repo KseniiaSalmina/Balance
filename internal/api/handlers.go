@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/KseniiaSalmina/Balance/internal/billing"
 	"github.com/KseniiaSalmina/Balance/internal/database"
 	"github.com/KseniiaSalmina/Balance/internal/wallet"
 )
@@ -22,7 +21,7 @@ func (s *Server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	balance, err := billing.CheckBalance(s.db, id)
+	balance, err := s.bill.CheckBalance(id)
 	if err != nil {
 		if errors.Is(err, database.UserDoesNotExistErr) {
 			http.Error(w, database.UserDoesNotExistErr.Error(), http.StatusBadRequest)
@@ -75,7 +74,7 @@ func (s *Server) getHistoryHandler(w http.ResponseWriter, r *http.Request) {
 		limit = 100
 	}
 
-	history, err := billing.CheckHistory(s.db, id, database.OrderBy(orderBy), database.Order(order), limit)
+	history, err := s.bill.CheckHistory(id, database.OrderBy(orderBy), database.Order(order), limit)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			http.Error(w, database.UserDoesNotExistErr.Error(), http.StatusBadRequest)
@@ -119,9 +118,9 @@ func (s *Server) moneyTransactionHandler(w http.ResponseWriter, r *http.Request)
 
 	switch changing.isTransfer {
 	case true:
-		err = billing.Transfer(s.db, id, changing.to, changing.amount)
+		err = s.bill.Transfer(id, changing.to, changing.amount)
 	case false:
-		err = billing.MoneyTransaction(s.db, id, operation, changing.amount, changing.description)
+		err = s.bill.MoneyTransaction(id, operation, changing.amount, changing.description)
 	}
 
 	if err != nil {

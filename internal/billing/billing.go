@@ -3,12 +3,10 @@ package billing
 import (
 	"errors"
 	"fmt"
-	"github.com/KseniiaSalmina/Balance/internal/database/mockdb"
-	"github.com/jackc/pgx"
-	"github.com/shopspring/decimal"
-
 	"github.com/KseniiaSalmina/Balance/internal/database"
+	"github.com/KseniiaSalmina/Balance/internal/database/mockdb"
 	"github.com/KseniiaSalmina/Balance/internal/wallet"
+	"github.com/shopspring/decimal"
 )
 
 type Storage interface {
@@ -20,8 +18,18 @@ type Storage interface {
 	Commit() error
 }
 
-func MoneyTransaction(db *pgx.Conn, id int, opt wallet.Operation, amount decimal.Decimal, desc string) error {
-	tx, err := beginTx(db)
+type Billing struct {
+	db *database.DB
+}
+
+func NewBilling(db *database.DB) *Billing {
+	return &Billing{
+		db: db,
+	}
+}
+
+func (b *Billing) MoneyTransaction(id int, opt wallet.Operation, amount decimal.Decimal, desc string) error {
+	tx, err := b.beginTx()
 	if err != nil {
 		return fmt.Errorf("MoneyTransaction -> %w", err)
 	}
@@ -63,19 +71,19 @@ func MoneyTransaction(db *pgx.Conn, id int, opt wallet.Operation, amount decimal
 	return nil
 }
 
-func beginTx(db *pgx.Conn) (Storage, error) {
-	if db == nil {
+func (b *Billing) beginTx() (Storage, error) {
+	if b.db == nil {
 		return &mockdb.MockDb{}, nil
 	}
 
-	tx, err := database.NewTransaction(db)
+	tx, err := b.db.NewTransaction()
 	if err != nil {
 		return nil, fmt.Errorf("beginTx -> %w", err)
 	}
 	return tx, nil
 }
 
-func moneyTransaction(s Storage, id int, opt wallet.Operation, amount decimal.Decimal, desc string) error {
+func (b *Billing) moneyTransaction(s Storage, id int, opt wallet.Operation, amount decimal.Decimal, desc string) error {
 	w, err := s.GetBalance(id)
 	if err != nil {
 		if errors.Is(err, database.UserDoesNotExistErr) {
@@ -108,19 +116,19 @@ func moneyTransaction(s Storage, id int, opt wallet.Operation, amount decimal.De
 	return nil
 }
 
-func Transfer(db *pgx.Conn, from, to int, amount decimal.Decimal) error {
-	tx, err := beginTx(db)
+func (b *Billing) Transfer(from, to int, amount decimal.Decimal) error {
+	tx, err := b.beginTx()
 	if err != nil {
 		return fmt.Errorf("Transfer -> %w", err)
 	}
 
-	err = moneyTransaction(tx, from, wallet.Withdrawal, amount, fmt.Sprintf("transfer to user %v", to))
+	err = b.moneyTransaction(tx, from, wallet.Withdrawal, amount, fmt.Sprintf("transfer to user %v", to))
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("transfer error: %w", err)
 	}
 
-	err = moneyTransaction(tx, to, wallet.Replenishment, amount, fmt.Sprintf("transfer from user %v", from))
+	err = b.moneyTransaction(tx, to, wallet.Replenishment, amount, fmt.Sprintf("transfer from user %v", from))
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("transfer error: %w", err)
@@ -132,8 +140,8 @@ func Transfer(db *pgx.Conn, from, to int, amount decimal.Decimal) error {
 	return nil
 }
 
-func CheckBalance(db *pgx.Conn, id int) (string, error) {
-	tx, err := beginTx(db)
+func (b *Billing) CheckBalance(id int) (string, error) {
+	tx, err := b.beginTx()
 	if err != nil {
 		return "", fmt.Errorf("billing.CheckBalance -> %w", err)
 	}
@@ -148,8 +156,8 @@ func CheckBalance(db *pgx.Conn, id int) (string, error) {
 	return w.StringBalance(), nil
 }
 
-func CheckHistory(db *pgx.Conn, id int, orderBy database.OrderBy, order database.Order, limit int) ([]wallet.HistoryChange, error) {
-	tx, err := beginTx(db)
+func (b *Billing) CheckHistory(id int, orderBy database.OrderBy, order database.Order, limit int) ([]wallet.HistoryChange, error) {
+	tx, err := b.beginTx()
 	if err != nil {
 		return nil, fmt.Errorf("billing.CheckHistory -> %w", err)
 	}

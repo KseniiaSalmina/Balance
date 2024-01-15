@@ -3,9 +3,11 @@ module github.com/KseniiaSalmina/Balance
 go 1.18
 
 require (
+	github.com/caarlos0/env/v6 v6.10.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/gorilla/mux v1.8.1 // indirect
 	github.com/jackc/pgx v3.6.2+incompatible // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/shopspring/decimal v1.3.1 // indirect

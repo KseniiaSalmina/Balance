@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/KseniiaSalmina/Balance/internal/config"
 	"github.com/jackc/pgx"
+	"log"
 	"time"
 )
 
@@ -32,6 +33,8 @@ func NewDB(cfg config.Postgres) (*DB, error) {
 	if err := db.Ping(ctx); err != nil {
 		return nil, errors.New("cannot connect to database: ping fail")
 	}
+
+	log.Println("database connected")
 
 	return &DB{
 		db: db,

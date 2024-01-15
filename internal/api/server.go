@@ -43,6 +43,8 @@ func NewServer(cfg config.Server, bill BillingManager) (*Server, error) {
 }
 
 func (s *Server) Run() {
+	log.Println("server started")
+
 	go func() {
 		err := s.httpServer.ListenAndServe()
 		log.Printf("http server stopped: %s", err.Error())

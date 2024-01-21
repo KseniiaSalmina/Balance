@@ -1,11 +1,12 @@
 package main
 
 import (
-	app "github.com/KseniiaSalmina/Balance/internal"
-	"github.com/KseniiaSalmina/Balance/internal/config"
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
 	"log"
+
+	app "github.com/KseniiaSalmina/Balance/internal"
+	"github.com/KseniiaSalmina/Balance/internal/config"
 )
 
 var (
@@ -18,6 +19,12 @@ func init() {
 		panic(err)
 	}
 }
+
+// @title Balance management API
+// @version 1.0.0
+// @description This is a microservice to manage users balances
+
+// @host localhost:8088
 
 func main() {
 	application, err := app.NewApplication(cfg)

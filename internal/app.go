@@ -1,15 +1,15 @@
 package app
 
 import (
-	"github.com/KseniiaSalmina/Balance/internal/billing"
-	"github.com/KseniiaSalmina/Balance/internal/config"
-	"github.com/KseniiaSalmina/Balance/internal/database"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/KseniiaSalmina/Balance/internal/api"
+	"github.com/KseniiaSalmina/Balance/internal/billing"
+	"github.com/KseniiaSalmina/Balance/internal/config"
+	"github.com/KseniiaSalmina/Balance/internal/database"
 )
 
 type Application struct {

@@ -1,0 +1,153 @@
+definitions:
+  api.changingBalanceRequest:
+    properties:
+      amount:
+        description: for a transfer must be a positive number, for a not transfer
+          transaction reports whether the operation is a replenishment (positive amount)
+          or withdrawal (negative)
+        type: number
+      description:
+        description: required for a not transfer transactions
+        type: string
+      isTransfer:
+        description: reports whether transaction is a transfer or not, default false
+        type: boolean
+      to:
+        description: required for a transfer
+        type: integer
+    type: object
+  wallet.HistoryChange:
+    properties:
+      Operation:
+        enum:
+        - replenishment
+        - withdrawal
+        type: string
+        x-enum-varnames:
+        - Replenishment
+        - Withdrawal
+      amount:
+        type: number
+      date:
+        type: integer
+      description:
+        type: string
+    type: object
+host: localhost:8088
+info:
+  contact: {}
+  description: This is a microservice to manage users balances
+  title: Balance management API
+  version: 1.0.0
+paths:
+  /wallets/{id}/balance:
+    get:
+      consumes:
+      - application/json
+      description: get user balance by id
+      parameters:
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get user balance
+      tags:
+      - info
+  /wallets/{id}/history:
+    get:
+      consumes:
+      - application/json
+      description: get user transaction history by id
+      parameters:
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 'string enums, default: date'
+        enum:
+        - date
+        - amount
+        in: path
+        name: orderBy
+        type: string
+      - description: 'string enums, default: DESC'
+        enum:
+        - DESC
+        - ASC
+        in: path
+        name: order
+        type: string
+      - description: 'default: 100'
+        in: path
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/wallet.HistoryChange'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get user balance history
+      tags:
+      - info
+  /wallets/{id}/transaction:
+    patch:
+      consumes:
+      - application/json
+      description: produce transaction to change user balance. Support replenishment,
+        withdrawal and transfer between users
+      parameters:
+      - description: user id
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: info about transaction
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/api.changingBalanceRequest'
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Change user balance
+      tags:
+      - changing
+swagger: "2.0"

@@ -1,3 +1,4 @@
+basePath: /
 definitions:
   api.changingBalanceRequest:
     properties:
@@ -36,7 +37,7 @@ definitions:
 host: localhost:8088
 info:
   contact: {}
-  description: This is a microservice to manage users balances
+  description: API to manage users balances
   title: Balance management API
   version: 1.0.0
 paths:

@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/KseniiaSalmina/Balance/internal/config"
 	"github.com/jackc/pgx"
 	"log"
 	"time"
+
+	"github.com/KseniiaSalmina/Balance/internal/config"
 )
 
 type DB struct {

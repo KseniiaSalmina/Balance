@@ -22,9 +22,10 @@ func init() {
 
 // @title Balance management API
 // @version 1.0.0
-// @description This is a microservice to manage users balances
+// @description API to manage users balances
 
 // @host localhost:8088
+// @BasePath /
 
 func main() {
 	application, err := app.NewApplication(cfg)

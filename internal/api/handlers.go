@@ -14,6 +14,16 @@ import (
 	"github.com/KseniiaSalmina/Balance/internal/wallet"
 )
 
+// @Summary Get user balance
+// @Tags info
+// @Description get user balance by id
+// @Accept json
+// @Produce json
+// @Param id path int true "user id"
+// @Success 200 {string} string
+// @Failure 400 {string} string
+// @Failure 500	{string} string
+// @Router /wallets/{id}/balance [get]
 func (s *Server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := parceID(r)
 	if err != nil {
@@ -32,7 +42,6 @@ func (s *Server) getBalanceHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(balance)
-	w.WriteHeader(http.StatusOK)
 }
 
 func parceID(r *http.Request) (int, error) {
@@ -41,12 +50,25 @@ func parceID(r *http.Request) (int, error) {
 	if err != nil {
 		return 0, fmt.Errorf("parceID -> %w", err)
 	}
-	if id < 0 {
+	if id <= 0 {
 		return 0, errors.New("invalid ID")
 	}
 	return id, nil
 }
 
+// @Summary Get user balance history
+// @Tags info
+// @Description get user transaction history by id
+// @Accept json
+// @Produce json
+// @Param id path int true "user id"
+// @Param orderBy path string false "string enums, default: date" Enums(date, amount)
+// @Param order path string false "string enums, default: DESC" Enums(DESC, ASC)
+// @Param limit path int false "default: 100"
+// @Success 200 {array} wallet.HistoryChange
+// @Failure 400 {string} string
+// @Failure 500	{string} string
+// @Router /wallets/{id}/history [get]
 func (s *Server) getHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := parceID(r)
 	if err != nil {
@@ -85,9 +107,18 @@ func (s *Server) getHistoryHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(history)
-	w.WriteHeader(http.StatusOK)
 }
 
+// @Summary Change user balance
+// @Tags changing
+// @Description produce transaction to change user balance. Support replenishment, withdrawal and transfer between users
+// @Accept json
+// @Param id path int true "user id"
+// @Param input body api.changingBalanceRequest true "info about transaction"
+// @Success 200
+// @Failure 400 {string} string
+// @Failure 500	{string} string
+// @Router /wallets/{id}/transaction [patch]
 func (s *Server) moneyTransactionHandler(w http.ResponseWriter, r *http.Request) {
 	id, err := parceID(r)
 	if err != nil {
@@ -101,30 +132,40 @@ func (s *Server) moneyTransactionHandler(w http.ResponseWriter, r *http.Request)
 		http.Error(w, "incorrect wallet data: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	if changing.amount.IsZero() {
+
+	if changing.Amount.IsZero() {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 
+	if changing.To == 0 {
+		http.Error(w, "required recipient", http.StatusBadRequest)
+		return
+	}
+
 	var operation wallet.Operation
-	if !changing.isTransfer {
-		if changing.amount.IsPositive() {
+	if !changing.IsTransfer {
+		if changing.Amount.IsPositive() {
 			operation = wallet.Replenishment
 		} else {
 			operation = wallet.Withdrawal
-			changing.amount = changing.amount.Mul(decimal.NewFromInt(-1))
+			changing.Amount = changing.Amount.Mul(decimal.NewFromInt(-1))
 		}
 	}
 
-	switch changing.isTransfer {
+	switch changing.IsTransfer {
 	case true:
-		err = s.bill.Transfer(id, changing.to, changing.amount)
+		err = s.bill.Transfer(id, changing.To, changing.Amount)
 	case false:
-		err = s.bill.MoneyTransaction(id, operation, changing.amount, changing.description)
+		if changing.Description == "" {
+			http.Error(w, "required description", http.StatusBadRequest)
+			return
+		}
+		err = s.bill.MoneyTransaction(id, operation, changing.Amount, changing.Description)
 	}
 
 	if err != nil {
-		if errors.Is(err, database.UserDoesNotExistErr) {
+		if errors.Is(err, database.UserDoesNotExistErr) || errors.Is(err, wallet.InsufficientFundsErr) {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}

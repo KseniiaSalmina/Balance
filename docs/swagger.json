@@ -1,12 +1,13 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "This is a microservice to manage users balances",
+        "description": "API to manage users balances",
         "title": "Balance management API",
         "contact": {},
         "version": "1.0.0"
     },
     "host": "localhost:8088",
+    "basePath": "/",
     "paths": {
         "/wallets/{id}/balance": {
             "get": {

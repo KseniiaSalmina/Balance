@@ -3,10 +3,11 @@ package billing
 import (
 	"errors"
 	"fmt"
+	"github.com/shopspring/decimal"
+
 	"github.com/KseniiaSalmina/Balance/internal/database"
 	"github.com/KseniiaSalmina/Balance/internal/database/mockdb"
 	"github.com/KseniiaSalmina/Balance/internal/wallet"
-	"github.com/shopspring/decimal"
 )
 
 type Storage interface {

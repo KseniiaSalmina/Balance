@@ -88,7 +88,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "string enums, default: date",
                         "name": "orderBy",
-                        "in": "path"
+                        "in": "query"
                     },
                     {
                         "enum": [
@@ -98,13 +98,13 @@ const docTemplate = `{
                         "type": "string",
                         "description": "string enums, default: DESC",
                         "name": "order",
-                        "in": "path"
+                        "in": "query"
                     },
                     {
                         "type": "integer",
                         "description": "default: 100",
                         "name": "limit",
-                        "in": "path"
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -156,7 +156,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/api.changingBalanceRequest"
+                            "$ref": "#/definitions/api.ChangingBalanceRequest"
                         }
                     }
                 ],
@@ -181,7 +181,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "api.changingBalanceRequest": {
+        "api.ChangingBalanceRequest": {
             "type": "object",
             "properties": {
                 "amount": {
@@ -192,7 +192,7 @@ const docTemplate = `{
                     "description": "required for a not transfer transactions",
                     "type": "string"
                 },
-                "isTransfer": {
+                "is_transfer": {
                     "description": "reports whether transaction is a transfer or not, default false",
                     "type": "boolean"
                 },

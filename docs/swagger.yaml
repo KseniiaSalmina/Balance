@@ -1,6 +1,6 @@
 basePath: /
 definitions:
-  api.changingBalanceRequest:
+  api.ChangingBalanceRequest:
     properties:
       amount:
         description: for a transfer must be a positive number, for a not transfer
@@ -10,7 +10,7 @@ definitions:
       description:
         description: required for a not transfer transactions
         type: string
-      isTransfer:
+      is_transfer:
         description: reports whether transaction is a transfer or not, default false
         type: boolean
       to:
@@ -85,18 +85,18 @@ paths:
         enum:
         - date
         - amount
-        in: path
+        in: query
         name: orderBy
         type: string
       - description: 'string enums, default: DESC'
         enum:
         - DESC
         - ASC
-        in: path
+        in: query
         name: order
         type: string
       - description: 'default: 100'
-        in: path
+        in: query
         name: limit
         type: integer
       produces:
@@ -136,7 +136,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/api.changingBalanceRequest'
+          $ref: '#/definitions/api.ChangingBalanceRequest'
       responses:
         "200":
           description: OK

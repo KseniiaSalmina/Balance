@@ -62,9 +62,9 @@ func parceID(r *http.Request) (int, error) {
 // @Accept json
 // @Produce json
 // @Param id path int true "user id"
-// @Param orderBy path string false "string enums, default: date" Enums(date, amount)
-// @Param order path string false "string enums, default: DESC" Enums(DESC, ASC)
-// @Param limit path int false "default: 100"
+// @Param orderBy query string false "string enums, default: date" Enums(date, amount)
+// @Param order query string false "string enums, default: DESC" Enums(DESC, ASC)
+// @Param limit query int false "default: 100"
 // @Success 200 {array} wallet.HistoryChange
 // @Failure 400 {string} string
 // @Failure 500	{string} string
@@ -76,17 +76,17 @@ func (s *Server) getHistoryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orderBy := mux.Vars(r)["orderBy"]
+	orderBy := r.FormValue("orderBy")
 	if orderBy != string(database.OrderByAmount) && orderBy != string(database.OrderByDate) {
 		orderBy = string(database.OrderByDate)
 	}
 
-	order := mux.Vars(r)["order"]
+	order := r.FormValue("order")
 	if order != string(database.Desc) && order != string(database.Asc) {
 		order = string(database.Desc)
 	}
 
-	limitStr := mux.Vars(r)["limit"]
+	limitStr := r.FormValue("limit")
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil && limitStr != "" {
 		http.Error(w, "incorrect limit", http.StatusBadRequest)
@@ -114,7 +114,7 @@ func (s *Server) getHistoryHandler(w http.ResponseWriter, r *http.Request) {
 // @Description produce transaction to change user balance. Support replenishment, withdrawal and transfer between users
 // @Accept json
 // @Param id path int true "user id"
-// @Param input body api.changingBalanceRequest true "info about transaction"
+// @Param input body api.ChangingBalanceRequest true "info about transaction"
 // @Success 200
 // @Failure 400 {string} string
 // @Failure 500	{string} string
@@ -126,7 +126,7 @@ func (s *Server) moneyTransactionHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var changing changingBalanceRequest
+	var changing ChangingBalanceRequest
 	err = json.NewDecoder(r.Body).Decode(&changing)
 	if err != nil {
 		http.Error(w, "incorrect wallet data: "+err.Error(), http.StatusBadRequest)

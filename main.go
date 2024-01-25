@@ -5,6 +5,7 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 
+	_ "github.com/KseniiaSalmina/Balance/docs"
 	app "github.com/KseniiaSalmina/Balance/internal"
 	"github.com/KseniiaSalmina/Balance/internal/config"
 )
@@ -23,10 +24,8 @@ func init() {
 // @title Balance management API
 // @version 1.0.0
 // @description API to manage users balances
-
 // @host localhost:8088
 // @BasePath /
-
 func main() {
 	application, err := app.NewApplication(cfg)
 	if err != nil {
